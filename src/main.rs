@@ -1,18 +1,11 @@
-use std::error::Error;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{stdin, BufRead};
 
 use crate::day1::solve_day_1;
 
 mod day1;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let input = File::open("/home/david/src/personal/projects/aoc2021/inputs/day1.txt")?;
-    let buffered = BufReader::new(input);
-
-    let count = solve_day_1(buffered.lines()).unwrap_or_default();
+fn main() {
+    let count = solve_day_1(stdin().lock().lines());
 
     println!("{} increases", count);
-
-    Ok(())
 }

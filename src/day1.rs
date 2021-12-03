@@ -1,4 +1,4 @@
-pub fn solve_day_1(lines: impl Iterator<Item = Result<String, std::io::Error>>) -> Option<i32> {
+pub fn solve_day_1(lines: impl Iterator<Item = Result<String, std::io::Error>>) -> i32 {
     let x = lines.flatten().flat_map(|l| l.parse::<i32>()).fold(
         (None::<i32>, None::<i32>, None::<i32>, 0),
         |a, c| match a {
@@ -16,9 +16,7 @@ pub fn solve_day_1(lines: impl Iterator<Item = Result<String, std::io::Error>>) 
         },
     );
 
-    let count = x.3;
-
-    Some(count)
+    x.3
 }
 
 #[cfg(test)]
@@ -42,7 +40,7 @@ mod tests {
         .into_iter();
 
         let expected = 5;
-        let result = solve_day_1(lines).unwrap();
+        let result = solve_day_1(lines);
 
         assert_eq!(expected, result);
     }
