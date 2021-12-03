@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input = File::open("/home/david/src/personal/projects/aoc2021/inputs/day1.txt")?;
     let buffered = BufReader::new(input);
 
-    let count = solve_day_1(buffered.lines())?;
+    let count = solve_day_1(buffered.lines()).unwrap_or_default();
 
     println!("{} increases", count);
 

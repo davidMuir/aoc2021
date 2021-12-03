@@ -1,25 +1,24 @@
-use std::error::Error;
+pub fn solve_day_1(lines: impl Iterator<Item = Result<String, std::io::Error>>) -> Option<i32> {
+    let x = lines.flatten().flat_map(|l| l.parse::<i32>()).fold(
+        (None::<i32>, None::<i32>, None::<i32>, 0),
+        |a, c| match a {
+            (Some(a0), Some(a1), Some(a2), a3) => {
+                let s1 = a0 + a1 + a2;
+                let s2 = c + a0 + a1;
 
-pub fn solve_day_1(
-    lines: impl Iterator<Item = Result<String, std::io::Error>>,
-) -> Result<i32, Box<dyn Error>> {
-    let count = lines
-        .flatten()
-        .flat_map(|l| l.parse::<i32>())
-        .fold((0, None::<i32>), |a, c| {
-            if let Some(p) = a.1 {
-                if c > p {
-                    (a.0 + 1, Some(c))
-                } else {
-                    (a.0, Some(c))
-                }
-            } else {
-                (a.0, Some(c))
+                let count = if s2 > s1 { a.3 + 1 } else { a3 };
+
+                (Some(c), Some(a0), Some(a1), count)
             }
-        })
-        .0;
+            (Some(a0), Some(a1), None, a3) => (Some(c), Some(a0), Some(a1), a3),
+            (Some(a0), None, None, a3) => (Some(c), Some(a0), None, a3),
+            (_, _, _, a3) => (Some(c), None, None, a3),
+        },
+    );
 
-    Ok(count)
+    let count = x.3;
+
+    Some(count)
 }
 
 #[cfg(test)]
@@ -27,7 +26,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn sample_data() {
         let lines = vec![
             Ok("199".to_string()),
             Ok("200".to_string()),
@@ -42,7 +41,7 @@ mod tests {
         ]
         .into_iter();
 
-        let expected = 7;
+        let expected = 5;
         let result = solve_day_1(lines).unwrap();
 
         assert_eq!(expected, result);
