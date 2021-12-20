@@ -1,47 +1,191 @@
-use std::error::Error;
-
-pub fn solve_day_3(
-    lines: impl Iterator<Item = Result<String, std::io::Error>>,
-) -> Result<u32, Box<dyn Error>> {
-    let base: u32 = 2;
-    let (gamma, epsilon) = lines
-        .flatten()
-        .map(|l| l.chars().map(to_bool).collect::<Vec<bool>>())
-        .fold(None::<Vec<(i32, i32)>>, |a, c| {
-            if let Some(a) = a {
-                Some(
-                    a.iter()
-                        .zip(c)
-                        .map(|f| {
-                            if f.1 {
-                                (f.0 .0, f.0 .1 + 1)
-                            } else {
-                                (f.0 .0 + 1, f.0 .1)
-                            }
-                        })
-                        .collect(),
-                )
-            } else {
-                Some(c.iter().map(|x| if *x { (0, 1) } else { (1, 0) }).collect())
-            }
-        })
-        .unwrap()
-        .iter()
-        .rev()
-        .enumerate()
-        .fold((0, 0), |a, (i, c)| {
-            if c.1 > c.0 {
-                (a.0 + base.pow(i as u32), a.1)
-            } else {
-                (a.0, a.1 + base.pow(i as u32))
-            }
-        });
-
-    Ok(gamma * epsilon)
+#[derive(Debug)]
+struct Tree {
+    nodes: Vec<Node>,
 }
 
-fn to_bool(c: char) -> bool {
-    c == '1'
+type NodeId = usize;
+
+#[derive(Debug)]
+struct Node {
+    value: Option<char>,
+    left: Option<NodeId>,
+    right: Option<NodeId>,
+}
+
+impl<'a> Tree {
+    fn new(lines: Vec<String>) -> Self {
+        let mut tree = Self { nodes: Vec::new() };
+
+        let root = Node {
+            value: None,
+            left: None,
+            right: None,
+        };
+
+        tree.nodes.push(root);
+
+        for line in lines {
+            tree.add(line);
+        }
+
+        tree
+    }
+
+    fn get_node(&self, id: NodeId) -> Option<&Node> {
+        self.nodes.get(id)
+    }
+
+    fn get_count(&self, id: Option<NodeId>) -> usize {
+        if let Some(id) = id {
+            if let Some(n) = self.get_node(id) {
+                1 + self.get_count(n.left) + self.get_count(n.right)
+            } else {
+                0
+            }
+        } else {
+            0
+        }
+    }
+
+    fn get_most_common(&self) -> Option<String> {
+        let mut current_id = Some(0);
+        let mut s = String::new();
+
+        while let Some(id) = current_id {
+            let n = self.get_node(id)?;
+
+            if let Some(c) = n.value {
+                s.push(c);
+            }
+
+            let count_left = self.get_count(n.left);
+            let count_right = self.get_count(n.right);
+
+            current_id = match (count_left, count_right) {
+                (0, 0) => None,
+                (0, _) => n.right,
+                (_, 0) => n.left,
+                (l, r) if l == r => n.right,
+                (l, r) if l > r => n.left,
+                (l, r) if l < r => n.right,
+                _ => None,
+            };
+        }
+
+        Some(s)
+    }
+
+    fn get_least_common(&self) -> Option<String> {
+        let mut current_id = Some(0);
+        let mut s = String::new();
+
+        while let Some(id) = current_id {
+            let n = self.get_node(id)?;
+
+            if let Some(c) = n.value {
+                s.push(c);
+            }
+
+            let count_left = self.get_count(n.left);
+            let count_right = self.get_count(n.right);
+
+            current_id = match (count_left, count_right) {
+                (0, 0) => None,
+                (0, _) => n.right,
+                (_, 0) => n.left,
+                (l, r) if l == r => n.left,
+                (l, r) if l > r => n.right,
+                (l, r) if l < r => n.left,
+                _ => None,
+            };
+        }
+
+        Some(s)
+    }
+
+    fn add(&mut self, line: String) {
+        let mut current_index = 0;
+
+        for c in line.chars() {
+            let left_id: Option<usize>;
+            let right_id: Option<usize>;
+
+            {
+                let current_node = self.get_node(current_index).unwrap();
+                left_id = current_node.left;
+                right_id = current_node.right;
+            }
+
+            if c == '1' {
+                if let Some(n) = right_id {
+                    current_index = n;
+                } else {
+                    let next_index = self.push_node(Node {
+                        value: Some(c),
+                        left: None,
+                        right: None,
+                    });
+
+                    {
+                        let current_node = self.nodes.get_mut(current_index).unwrap();
+
+                        current_node.right = Some(next_index);
+                    }
+                    current_index = next_index;
+                }
+            } else if let Some(n) = left_id {
+                current_index = n;
+            } else {
+                let next_index = self.push_node(Node {
+                    value: Some(c),
+                    left: None,
+                    right: None,
+                });
+
+                {
+                    let current_node = self.nodes.get_mut(current_index).unwrap();
+
+                    current_node.left = Some(next_index);
+                }
+                current_index = next_index;
+            }
+        }
+    }
+
+    fn push_node(&mut self, node: Node) -> NodeId {
+        let next_id = self.nodes.len();
+
+        self.nodes.push(node);
+
+        next_id
+    }
+}
+
+impl Node {}
+
+fn get_oxygen_rating(tree: &Tree) -> Option<u32> {
+    let most_common = tree.get_most_common()?;
+
+    Some(u32::from_str_radix(&*most_common, 2).unwrap())
+}
+
+fn get_co2_scrubber_rating(tree: &Tree) -> Option<u32> {
+    let least_common = tree.get_least_common()?;
+
+    println!("{}", least_common);
+
+    Some(u32::from_str_radix(&*least_common, 2).unwrap())
+}
+
+pub fn solve_day_3(lines: impl Iterator<Item = Result<String, std::io::Error>>) -> Option<u32> {
+    let lines = lines.flatten().collect::<Vec<String>>();
+
+    let tree = Tree::new(lines);
+
+    let oxygen = get_oxygen_rating(&tree).unwrap();
+    let scrubber = get_co2_scrubber_rating(&tree).unwrap();
+
+    Some(oxygen * scrubber)
 }
 
 #[cfg(test)]
@@ -66,7 +210,7 @@ mod tests {
         ]
         .into_iter();
 
-        let expected = 198;
+        let expected = 230;
         let result = solve_day_3(lines).unwrap();
 
         assert_eq!(expected, result);

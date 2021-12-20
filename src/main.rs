@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Answer: {}", answer);
         }
         Some("3") => {
-            let answer = solve_day_3(stdin().lock().lines())?;
+            let answer = solve_day_3(stdin().lock().lines()).unwrap();
 
             println!("Answer: {}", answer);
         }
