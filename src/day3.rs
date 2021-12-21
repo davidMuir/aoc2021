@@ -12,6 +12,41 @@ struct Node {
     right: Option<NodeId>,
 }
 
+struct TreeIterator<'a> {
+    current_node_id: Option<NodeId>,
+    tree: &'a Tree,
+    node_selector: fn(&Tree, &Node) -> Option<NodeId>,
+}
+
+impl<'a> TreeIterator<'a> {
+    fn new(tree: &'a Tree, selector: fn(&Tree, &Node) -> Option<NodeId>) -> Self {
+        Self {
+            tree,
+            current_node_id: Some(0),
+            node_selector: selector,
+        }
+    }
+}
+
+impl<'a> Iterator for TreeIterator<'a> {
+    type Item = &'a Node;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(id) = self.current_node_id {
+            let s = self.node_selector;
+
+            let n = self.tree.get_node(id)?;
+            let next_id = s(self.tree, n);
+
+            self.current_node_id = next_id;
+
+            self.tree.get_node(next_id?)
+        } else {
+            None
+        }
+    }
+}
+
 impl<'a> Tree {
     fn new(lines: Vec<String>) -> Self {
         let mut tree = Self { nodes: Vec::new() };
@@ -31,6 +66,10 @@ impl<'a> Tree {
         tree
     }
 
+    fn iter(&'a self, node_selector: fn(&Tree, &Node) -> Option<NodeId>) -> TreeIterator<'a> {
+        TreeIterator::new(self, node_selector)
+    }
+
     fn get_node(&self, id: NodeId) -> Option<&Node> {
         self.nodes.get(id)
     }
@@ -45,62 +84,6 @@ impl<'a> Tree {
         } else {
             0
         }
-    }
-
-    fn get_most_common(&self) -> Option<String> {
-        let mut current_id = Some(0);
-        let mut s = String::new();
-
-        while let Some(id) = current_id {
-            let n = self.get_node(id)?;
-
-            if let Some(c) = n.value {
-                s.push(c);
-            }
-
-            let count_left = self.get_count(n.left);
-            let count_right = self.get_count(n.right);
-
-            current_id = match (count_left, count_right) {
-                (0, 0) => None,
-                (0, _) => n.right,
-                (_, 0) => n.left,
-                (l, r) if l == r => n.right,
-                (l, r) if l > r => n.left,
-                (l, r) if l < r => n.right,
-                _ => None,
-            };
-        }
-
-        Some(s)
-    }
-
-    fn get_least_common(&self) -> Option<String> {
-        let mut current_id = Some(0);
-        let mut s = String::new();
-
-        while let Some(id) = current_id {
-            let n = self.get_node(id)?;
-
-            if let Some(c) = n.value {
-                s.push(c);
-            }
-
-            let count_left = self.get_count(n.left);
-            let count_right = self.get_count(n.right);
-
-            current_id = match (count_left, count_right) {
-                (0, 0) => None,
-                (0, _) => n.right,
-                (_, 0) => n.left,
-                (l, r) if l == r => n.left,
-                (l, r) if l > r => n.right,
-                (l, r) if l < r => n.left,
-                _ => None,
-            };
-        }
-
-        Some(s)
     }
 
     fn add(&mut self, line: String) {
@@ -163,16 +146,50 @@ impl<'a> Tree {
 
 impl Node {}
 
+fn get_least_common(tree: &Tree, node: &Node) -> Option<NodeId> {
+    let count_left = tree.get_count(node.left);
+    let count_right = tree.get_count(node.right);
+
+    match (count_left, count_right) {
+        (0, 0) => None,
+        (0, _) => node.right,
+        (_, 0) => node.left,
+        (l, r) if l == r => node.right,
+        (l, r) if l > r => node.left,
+        (l, r) if l < r => node.right,
+        _ => None,
+    }
+}
+
+fn get_most_common(t: &Tree, n: &Node) -> Option<NodeId> {
+    let count_left = t.get_count(n.left);
+    let count_right = t.get_count(n.right);
+
+    match (count_left, count_right) {
+        (0, 0) => None,
+        (0, _) => n.right,
+        (_, 0) => n.left,
+        (l, r) if l == r => n.left,
+        (l, r) if l > r => n.right,
+        (l, r) if l < r => n.left,
+        _ => None,
+    }
+}
+
 fn get_oxygen_rating(tree: &Tree) -> Option<u32> {
-    let most_common = tree.get_most_common()?;
+    let most_common = tree
+        .iter(get_most_common)
+        .flat_map(|n| n.value)
+        .collect::<String>();
 
     Some(u32::from_str_radix(&*most_common, 2).unwrap())
 }
 
 fn get_co2_scrubber_rating(tree: &Tree) -> Option<u32> {
-    let least_common = tree.get_least_common()?;
-
-    println!("{}", least_common);
+    let least_common = tree
+        .iter(get_least_common)
+        .flat_map(|n| n.value)
+        .collect::<String>();
 
     Some(u32::from_str_radix(&*least_common, 2).unwrap())
 }
