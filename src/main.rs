@@ -5,11 +5,12 @@ use std::{
 
 use clap::{App, Arg};
 
-use crate::{day1::solve_day_1, day2::solve_day_2, day3::solve_day_3};
+use crate::{day1::solve_day_1, day2::solve_day_2, day3::solve_day_3, day4::solve_day_4};
 
 mod day1;
 mod day2;
 mod day3;
+mod day4;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("aoc2021")
@@ -36,6 +37,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         Some("3") => {
             let answer = solve_day_3(stdin().lock().lines()).unwrap();
+
+            println!("Answer: {}", answer);
+        }
+        Some("4") => {
+            let answer = solve_day_4(stdin().lock().lines());
 
             println!("Answer: {}", answer);
         }
