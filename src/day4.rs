@@ -33,28 +33,12 @@ fn get_boards(lines: &[String]) -> Vec<Board> {
         })
         .collect::<Vec<u32>>();
 
-    let mut boards = vec![];
-    let mut i = 0;
-
-    loop {
-        let numbers = numbers
-            .iter()
-            .skip(i)
-            .take(25)
-            .map(|n| n.to_owned())
-            .collect::<Vec<u32>>();
-
-        if numbers.len() < 25 {
-            return boards;
-        }
-
-        let board = Board {
-            numbers: numbers.try_into().unwrap(),
-        };
-
-        boards.push(board);
-        i += 25;
-    }
+    numbers
+        .chunks(25)
+        .map(|n| Board {
+            numbers: n.to_owned().try_into().unwrap(),
+        })
+        .collect()
 }
 
 #[derive(Debug, PartialEq)]
