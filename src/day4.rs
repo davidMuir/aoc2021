@@ -9,7 +9,7 @@ pub fn solve_day_4(lines: impl Iterator<Item = Result<String, std::io::Error>>) 
         .map(|b| b.get_win(&draws))
         .filter(|r| matches!(r, Some(_)))
         .flatten()
-        .min_by(|a, b| a.0.cmp(&b.0))
+        .max_by(|a, b| a.0.cmp(&b.0))
         .unwrap();
 
     winning_board.1
@@ -147,7 +147,7 @@ mod tests {
     fn sample_data() {
         let lines = get_sample_data().into_iter();
 
-        let expected = 4512;
+        let expected = 1924;
         let result = solve_day_4(lines);
 
         assert_eq!(expected, result);
